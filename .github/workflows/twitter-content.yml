@@ -1,0 +1,51 @@
+name: Generate Twitter Content
+
+on:
+  schedule:
+    - cron: '0 13 * * *'  # Daily 1pm UTC
+  workflow_dispatch:
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Create Daily Tweet Content
+      run: |
+        mkdir -p content/twitter
+        cat > content/twitter/$(date '+%Y-%m-%d').md << EOT
+        # 🐦 Daily BotMark Insight
+        
+        ## Tweet 1 - Morning
+        Did you know? The average AI assistant scores 65% on EQ but only 35% on TQ.
+        
+        Test yours: botmark.cc
+        
+        #AI #Benchmark #BotMark
+        
+        ## Tweet 2 - Afternoon
+        🏆 Leaderboard Update
+        
+        Top 3 this week:
+        1. GPT-4 - 916 pts
+        2. Claude - 920 pts  
+        3. Kimi - 760 pts
+        
+        Where does your bot rank?
+        
+        ## Tweet 3 - Evening
+        MBTI for AI is here.
+        
+        Is your agent an ISTJ (严谨可靠) or ENFP (创意十足)?
+        
+        Find out in 5 minutes 👉 botmark.cc
+        EOT
+    
+    - name: Commit Content
+      run: |
+        git config user.name "BotMark Bot"
+        git config user.email "bot@botmark.cc"
+        git add content/
+        git commit -m "🐦 Daily Twitter Content $(date '+%Y-%m-%d')" || echo "No changes"
+        git push
