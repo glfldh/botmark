@@ -1,0 +1,63 @@
+name: Discord Marketing Automation
+
+on:
+  schedule:
+    # Daily messages
+    - cron: '0 9 * * *'   # 09:00 UTC - Morning greeting
+    - cron: '0 14 * * *'  # 14:00 UTC - Leaderboard
+    - cron: '0 18 * * *'  # 18:00 UTC - Daily insight
+    - cron: '0 22 * * *'  # 22:00 UTC - Question of the day
+    # Weekly report
+    - cron: '0 9 * * 1'   # Monday 09:00 UTC - Weekly report
+  workflow_dispatch:
+    inputs:
+      message_type:
+        description: 'Message type to send'
+        required: true
+        default: 'morning'
+        type: choice
+        options:
+          - morning
+          - leaderboard
+          - insight
+          - question
+          - weekly
+
+jobs:
+  send-discord-message:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: pip install requests
+    
+    - name: Determine message type
+      id: message-type
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "type=${{ github.event.inputs.message_type }}" >> $GITHUB_OUTPUT
+        else
+          # Map cron time to message type
+          HOUR=$(date -u +%H)
+          case $HOUR in
+            09) echo "type=morning" >> $GITHUB_OUTPUT ;;
+            14) echo "type=leaderboard" >> $GITHUB_OUTPUT ;;
+            18) echo "type=insight" >> $GITHUB_OUTPUT ;;
+            22) echo "type=question" >> $GITHUB_OUTPUT ;;
+            *) echo "type=morning" >> $GITHUB_OUTPUT ;;
+          esac
+        fi
+    
+    - name: Send Discord message
+      env:
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+      run: |
+        python scripts/discord_marketing.py ${{ steps.message-type.outputs.type }}
